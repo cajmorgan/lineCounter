@@ -3,12 +3,14 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <string.h>
+#include "cajlib.h"
 
-typedef struct filesAndFolders {
+struct filesAndFolders {
   char *path;
   char *ext;
   struct filesAndFolders *next;
-} directories, files;
+  struct filesAndFolders *prev;
+};
 
 typedef struct fileCounter {
   int c;
@@ -18,13 +20,14 @@ typedef struct fileCounter {
   int total;
 } result;
 
-result readFilesAndCount(char *path, files *allfiles);
+result readFilesAndCount(char *path, struct filesAndFolders *allfiles);
 int countNumberOfLines(FILE *file);
-directories *findAllFoldersInCurrentDir(char *path);
-files *findAllFilesInCurrentDir(char *path);
+void findAllFoldersInCurrentDir(char *path, struct filesAndFolders *folders);
+void findAllFilesInCurrentDir(char *path, struct filesAndFolders *allfiles);
+void countToFileCounter(result *fileCounterByExt, char *path, struct filesAndFolders *allfiles);
+void recursiveFolderSearcher(struct filesAndFolders *folders, char *path, result *fileCounterByExt);
 
-int main() 
-{
+int main() {
   char *path = "./filesToCount/";
   result fileCounterByExt = {
     .c = 0,
@@ -34,36 +37,110 @@ int main()
     .total = 0
   };
 
-  directories *folders = findAllFoldersInCurrentDir(path);
-  files *allfiles = findAllFilesInCurrentDir(path);
+  struct filesAndFolders *folders = NULL;
+  folders = (struct filesAndFolders *)malloc(sizeof(struct filesAndFolders));
+  findAllFoldersInCurrentDir(path, folders);
   
+  struct filesAndFolders *allfiles = (struct filesAndFolders *)malloc(sizeof(struct filesAndFolders));
+  findAllFilesInCurrentDir(path, allfiles);
+  countToFileCounter(&fileCounterByExt, path, allfiles);
+  
+  recursiveFolderSearcher(folders, path, &fileCounterByExt);
+
   //First, find all folders and put that into a linked list. 
   //Then find all files in every folder
+  //Scan all files first from all folders? 
   
 
-  //File counter -- Put in another func
-  result tempFileCounterByExt = readFilesAndCount(path, allfiles);
-  fileCounterByExt.c += tempFileCounterByExt.c;
-  fileCounterByExt.js += tempFileCounterByExt.js;
-  fileCounterByExt.html += tempFileCounterByExt.html;
-  fileCounterByExt.css += tempFileCounterByExt.css;
-
-  //After loop
+  
+  
+ //After loop
   fileCounterByExt.total += fileCounterByExt.c;
   fileCounterByExt.total += fileCounterByExt.js;
-  fileCounterByExt.total += fileCounterByExt.html;
   fileCounterByExt.total += fileCounterByExt.css;
+  fileCounterByExt.total += fileCounterByExt.html;
   printf("Total lines: %d", fileCounterByExt.total);
+  // countToFileCounter(&fileCounterByExt, path, allfiles);
 
-
+  //File counter -- Put in another func
+  
   return 0;
+  
 }
 
-result readFilesAndCount(char *path, files *allfiles) 
-{
+void recursiveFolderSearcher(struct filesAndFolders *folders, char *path, result *fileCounterByExt) {
+   
+  while(folders->path != NULL) {
+    char *subpath = NULL;
+    subpath = calloc(100, sizeof(char));
+    string_copy(subpath, 100, path, strlen(path) + 1);
+    subpath = string_concat(subpath, folders->path);
+    add_char(subpath, '/', 100);
+
+    struct filesAndFolders *subfolders = NULL;
+    subfolders = (struct filesAndFolders *)malloc(sizeof(struct filesAndFolders));
+    findAllFoldersInCurrentDir(subpath, subfolders);
+    struct filesAndFolders *suballfiles = NULL;
+    suballfiles = (struct filesAndFolders *)malloc(sizeof(struct filesAndFolders));
+    findAllFilesInCurrentDir(subpath, suballfiles);
+    countToFileCounter(fileCounterByExt, subpath, suballfiles);
+    subpath = NULL;
+    subfolders = NULL;
+    suballfiles = NULL;
+    free(subpath);
+    free(subfolders);
+    free(suballfiles);
+    //Manual
+    // char *subpath = "./filesToCount/ohalo/";
+    // struct filesAndFolders *subfolders = NULL;
+    // subfolders = (struct filesAndFolders *)malloc(sizeof(struct filesAndFolders));
+    // findAllFoldersInCurrentDir(subpath, subfolders);
+    // struct filesAndFolders *suballfiles = NULL;
+    // suballfiles = (struct filesAndFolders *)malloc(sizeof(struct filesAndFolders));
+    // findAllFilesInCurrentDir(subpath, suballfiles);
+    // countToFileCounter(fileCounterByExt, subpath, suballfiles);
+   
+   
+    // struct filesAndFolders *foldersInSub = NULL;
+    // foldersInSub = calloc(1, sizeof(struct filesAndFolders));
+    // struct filesAndFolders *filesInSub = NULL;
+    // filesInSub = calloc(1, sizeof(struct filesAndFolders));
+    // char *subfolderPath = (char *)malloc(sizeof(char) * 100);
+   
+   
+    // findAllFoldersInCurrentDir(subfolderPath, foldersInSub);
+    // // findAllFilesInCurrentDir(subfolderPath, filesInSub);
+    // // countToFileCounter(fileCounterByExt, subfolderPath, filesInSub);
+
+
+    // // Görr en recursion, if folders in sub != NULL, recurse. 
+    // // Fill the allfiles everytime and clear that. THIS IS SOME BUG, MAKE SURE TO REALLOC/declare ALLFILEs
+    // // free(subfolderPath);
+    // // subfolderPath = NULL;
+    if(folders->next != NULL) {
+      folders = folders->next;
+    } else {
+      break;
+    }
+  }
+
+}
+
+void countToFileCounter(result *fileCounterByExt, char *path, struct filesAndFolders *allfiles) {
+  result tempFileCounterByExt = readFilesAndCount(path, allfiles);
+  fileCounterByExt->c += tempFileCounterByExt.c;
+  fileCounterByExt->js += tempFileCounterByExt.js;
+  fileCounterByExt->html += tempFileCounterByExt.html;
+  fileCounterByExt->css += tempFileCounterByExt.css;
+
+  // allfiles = NULL;
+  // free(allfiles);
+}
+
+result readFilesAndCount(char *path, struct filesAndFolders *allfiles) {
   FILE *fp;
   char *pathWithFile;
-  files *currentFile;
+  struct filesAndFolders *currentFile = NULL;
   result tempFileCounterByExt = {
     .c = 0,
     .js = 0,
@@ -76,15 +153,25 @@ result readFilesAndCount(char *path, files *allfiles)
   pathWithFile = (char *)malloc(sizeof(char) * 100);
 
   currentFile = allfiles;
-  while(currentFile->next != NULL) {
-    strcpy(pathWithFile, path);
-    strcat(pathWithFile, currentFile->path);
+
+  if(currentFile->path == NULL) {
+    if(currentFile->next != NULL) {
+      currentFile = currentFile->next;
+    } else {
+      return tempFileCounterByExt;
+    }
+  }
+
+
+  while(currentFile != NULL) {
+    string_copy(pathWithFile, 100, path, strlen(path) + 1);
+    pathWithFile = string_concat(pathWithFile, currentFile->path);
     fp = fopen(pathWithFile, "r");
     if(!fp) {
       perror("Failed to open file!");
       return tempFileCounterByExt;
     }
-
+    
     lineBreaks = countNumberOfLines(fp);
     char *fileExt = strrchr(currentFile->path, '.');
     if(strcmp(fileExt + 1, "js") == 0) {
@@ -119,38 +206,48 @@ int countNumberOfLines(FILE *file)
   return counter;
 }
 
-directories *findAllFoldersInCurrentDir(char *path)
-{
-  DIR *currentDirectory;
+void findAllFoldersInCurrentDir(char *path, struct filesAndFolders *folders) {
+  DIR *currentDirectory = NULL;
   currentDirectory = opendir(path);
-  directories *folders, *current;
-  struct dirent *dir;
+  struct filesAndFolders *current;
+  struct dirent *dir = NULL;
+  dir = (struct dirent *)malloc(sizeof(struct dirent));
 
-  folders = (directories *)malloc(sizeof(directories));
   current = folders;
+  current->prev = NULL;
 
   while((dir = readdir(currentDirectory)) != NULL) {
     char target = '.';
-    if(strrchr(dir->d_name, target) == NULL) {
+    if(strchr(dir->d_name, target) == NULL) {
       current->path = dir->d_name; 
-      current->next = (directories *)malloc(sizeof(directories));
+      current->next = (struct filesAndFolders *)malloc(sizeof(struct filesAndFolders));
+      current->next->prev = current;
       current = current->next;
     }
   }
 
+  current = current->prev;
+
+  if(current != NULL) {
+    current->next = NULL;
+    free(current->next);
+  }
+  
+  dir = NULL;
+  free(dir);
   closedir(currentDirectory);
-  return folders;
+
 }
 
-files *findAllFilesInCurrentDir(char *path) 
-{  
-  DIR *currentDirectory;
+void findAllFilesInCurrentDir(char *path, struct filesAndFolders *allfiles) {  
+  DIR *currentDirectory = NULL;
   currentDirectory = opendir(path);
-  files *allfiles, *current;
-  struct dirent *dir;
+  struct filesAndFolders *current;
+  struct dirent *dir = NULL;
+  dir = (struct dirent *)malloc(sizeof(struct dirent));
 
-  allfiles = (files *)malloc(sizeof(files));
   current = allfiles;
+  current->prev = NULL;
 
   while((dir = readdir(currentDirectory)) != NULL) {
     if(strcmp(dir->d_name, ".file") > 0) {
@@ -160,34 +257,48 @@ files *findAllFilesInCurrentDir(char *path)
         if(strcmp(fileExt + 1, "js") == 0) {
           current->path = dir->d_name;
           current->ext = (fileExt + 1);
-          current->next = (files *)malloc(sizeof(files));
+          current->next = (struct filesAndFolders *)malloc(sizeof(struct filesAndFolders));
+          current->next->prev = current;
           current = current->next; 
         } else if(strcmp(fileExt + 1, "css") == 0) {
           current->path = dir->d_name;
           current->ext = (fileExt + 1);
-          current->next = (files *)malloc(sizeof(files));
+          current->next = (struct filesAndFolders *)malloc(sizeof(struct filesAndFolders));
+          current->next->prev = current;
           current = current->next;
         } else if(strcmp(fileExt + 1, "html") == 0) {
           current->path = dir->d_name;
           current->ext = (fileExt + 1);
-          current->next = (files *)malloc(sizeof(files));
+          current->next = (struct filesAndFolders *)malloc(sizeof(struct filesAndFolders));
+          current->next->prev = current;
           current = current->next;
         } else if(strcmp(fileExt + 1, "c") == 0) {
           current->path = dir->d_name;
           current->ext = (fileExt + 1);
-          current->next = (files *)malloc(sizeof(files));
+          current->next = (struct filesAndFolders *)malloc(sizeof(struct filesAndFolders));
+          current->next->prev = current;
           current = current->next;
         } else if(strcmp(fileExt + 1, "h") == 0) {
           current->path = dir->d_name;
           current->ext = (fileExt + 1);
-          current->next = (files *)malloc(sizeof(files));
+          current->next = (struct filesAndFolders *)malloc(sizeof(struct filesAndFolders));
+          current->next->prev = current;
           current = current->next;
         } 
       }
     }
   }
-
+  
+  current = current->prev;
+  
+  if(current != NULL) {
+    current->next = NULL;
+    free(current->next);
+  }
+  
+  dir = NULL;
+  free(dir);
   closedir(currentDirectory);
-  return allfiles;
+  // return allfiles;
 }
 
