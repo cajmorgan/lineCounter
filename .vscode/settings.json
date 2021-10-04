@@ -15,6 +15,7 @@
     "algorithm": "cpp",
     "complex": "cpp",
     "new": "cpp",
-    "stdlib.h": "c"
+    "stdlib.h": "c",
+    "cajlib.h": "c"
   }
 }

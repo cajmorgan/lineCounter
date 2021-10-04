@@ -3,6 +3,7 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <string.h>
+#include <unistd.h>
 #include "cajlib.h"
 
 struct filesAndFolders {
@@ -100,20 +101,8 @@ void recursiveFolderSearcher(struct filesAndFolders *folders, char *path, result
     findAllFilesInCurrentDir(subpath, suballfiles);
     countToFileCounter(fileCounterByExt, subpath, suballfiles);
     
-    
     recursiveFolderSearcher(subfolders, subpath, fileCounterByExt);
 
-    // free(subpath);
-    // free(subfolders);
-    // free(suballfiles);
-    // subpath = NULL;
-    // subfolders = NULL;
-    // suballfiles = NULL;
-   
-    // // Görr en recursion, if folders in sub != NULL, recurse. 
-    // // Fill the allfiles everytime and clear that. THIS IS SOME BUG, MAKE SURE TO REALLOC/declare ALLFILEs
-    // // free(subfolderPath);
-    // // subfolderPath = NULL;
     if(folders->next != NULL) {
       folders = folders->next;
     } else {
@@ -214,13 +203,22 @@ void findAllFoldersInCurrentDir(char *path, struct filesAndFolders *folders) {
 
   while((dir = readdir(currentDirectory)) != NULL) {
     char target = '.';
-    if(strrchr(dir->d_name, target) == NULL) {
+    char *test_if_execution_str = (char *)malloc(sizeof(char) * 100);
+    string_copy(test_if_execution_str, 100, path, strlen(path) + 1);
+    char *concatted_string = (char *)malloc(sizeof(char) * 100);
+    concatted_string = string_concat(test_if_execution_str, dir->d_name);
+    add_char(concatted_string, '/', 100);
+    if(strrchr(dir->d_name, target) == NULL && access(concatted_string, X_OK) != -1) {
       current->path = (char *)malloc(sizeof(char) * 100);
       int length_of_dir_name = strlen(dir->d_name);
       string_copy(current->path, 100, dir->d_name, length_of_dir_name + 1);
       current->next = (struct filesAndFolders *)malloc(sizeof(struct filesAndFolders));
       current->next->prev = current;
       current = current->next;
+      free(test_if_execution_str);
+      free(concatted_string);
+      test_if_execution_str = NULL;
+      concatted_string = NULL;
     }
   }
 
