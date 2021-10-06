@@ -64,3 +64,22 @@ int add_char(char *dest, char char_to_add, int size_of_dest) {
   return 0;
 }
 
+int str_is_identical(char *string_one, char *string_two) {
+  int length_of_string_one = strlen(string_one);
+  int length_of_string_two = strlen(string_two);
+  int is_identical = 0;
+
+  for(int pos = 0; pos < length_of_string_one; pos++) {
+    if(string_one[pos] == string_two[pos]) {
+      is_identical += 1;
+    }
+  }
+
+  if(is_identical == length_of_string_one && is_identical == length_of_string_two) {
+    return 0;
+  }
+  
+  return 1;
+}
+
+
