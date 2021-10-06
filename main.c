@@ -4,6 +4,7 @@
 #include <dirent.h>
 #include <string.h>
 #include <unistd.h>
+#include <limits.h>
 #include "cajlib.h"
 
 struct filesAndFolders {
@@ -29,7 +30,14 @@ void countToFileCounter(result *fileCounterByExt, char *path, struct filesAndFol
 void recursiveFolderSearcher(struct filesAndFolders *folders, char *path, result *fileCounterByExt);
 
 int main() {
-  char *path = "./filesToCount/";
+  char cwd[PATH_MAX];
+  // getcwd(cwd, sizeof(cwd));
+  // printf("%s", cwd);
+  scanf("%s", cwd);
+  scanf("%s", cwd);
+
+  char *path = "./";
+  
   result fileCounterByExt = {
     .c = 0,
     .js = 0,
@@ -215,8 +223,8 @@ void findAllFoldersInCurrentDir(char *path, struct filesAndFolders *folders) {
       current->next = (struct filesAndFolders *)malloc(sizeof(struct filesAndFolders));
       current->next->prev = current;
       current = current->next;
-      free(test_if_execution_str);
-      free(concatted_string);
+      // free(test_if_execution_str);
+      // free(concatted_string);
       test_if_execution_str = NULL;
       concatted_string = NULL;
     }

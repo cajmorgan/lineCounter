@@ -16,6 +16,7 @@
     "complex": "cpp",
     "new": "cpp",
     "stdlib.h": "c",
-    "cajlib.h": "c"
+    "cajlib.h": "c",
+    "node_api.h": "c"
   }
 }
